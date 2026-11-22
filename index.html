@@ -14,6 +14,7 @@ html{scroll-padding-top:env(safe-area-inset-top,0px);background:linear-gradient(
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 12% 8%,rgba(125,211,252,.5),transparent 38%),radial-gradient(circle at 90% 38%,rgba(99,102,241,.45),transparent 42%),radial-gradient(circle at 25% 92%,rgba(56,189,248,.4),transparent 40%)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:none;color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;min-height:100vh}
+html,body{touch-action:pan-y pinch-zoom}
 main{max-width:480px;margin:0 auto;padding:18px 16px 150px;overflow-x:clip}
 h1{font-size:26px;font-weight:800;margin:0;letter-spacing:-.03em}h2{font-size:18px;font-weight:800;margin:0 0 12px}
 .sub{color:var(--mute);font-size:14px;font-weight:700;text-transform:capitalize}
@@ -178,12 +179,14 @@ function del(k,id){undo=JSON.stringify(S);S[k]=S[k].filter(x=>x.id!==id);save();
 const ORDER=['home','tx','ins','card'];
 function go(t){const d=ORDER.indexOf(t)-ORDER.indexOf(tab);tab=t;render();scrollTo(0,0);if(!d)return;const v=$('#v-'+t);v.classList.remove('sl-l','sl-r');void v.offsetWidth;v.classList.add(d>0?'sl-r':'sl-l');v.addEventListener('animationend',()=>v.classList.remove('sl-l','sl-r'),{once:true})}
 let sw=null;
-document.addEventListener('touchstart',e=>{sw=null;if(e.touches.length!==1)return;if($('#ov').classList.contains('on'))return;const t=e.touches[0],el=e.target;if(el.closest&&el.closest('input,select,textarea,label,button.fab'))return;if(t.clientX<24||t.clientX>innerWidth-24)return;sw={x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
-document.addEventListener('touchend',e=>{if(!sw)return;const t=e.changedTouches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y,dt=Date.now()-sw.t;sw=null;
- if(dt>800||Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.5)return;
+function swEnd(x,y){if(!sw)return;const dx=x-sw.x,dy=y-sw.y,dt=Date.now()-sw.t;sw=null;
+ if(dt>1000||Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.3)return;
  if(String(getSelection()).length||$('#ov').classList.contains('on'))return;
- const i=ORDER.indexOf(tab)+(dx<0?1:-1);if(i<0||i>=ORDER.length)return;go(ORDER[i])},{passive:true});
-document.addEventListener('touchcancel',()=>{sw=null},{passive:true});
+ const i=ORDER.indexOf(tab)+(dx<0?1:-1);if(i<0||i>=ORDER.length)return;go(ORDER[i])}
+document.addEventListener('touchstart',e=>{sw=null;if(e.touches.length!==1)return;if($('#ov').classList.contains('on'))return;const t=e.touches[0],el=e.target;if(el.closest&&el.closest('input,select,textarea,label,button.fab'))return;if(t.clientX<20||t.clientX>innerWidth-20)return;sw={x:t.clientX,y:t.clientY,t:Date.now(),lx:t.clientX,ly:t.clientY}},{passive:true});
+document.addEventListener('touchmove',e=>{if(!sw)return;const t=e.touches[0];sw.lx=t.clientX;sw.ly=t.clientY},{passive:true});
+document.addEventListener('touchend',e=>{if(!sw)return;const t=e.changedTouches[0];swEnd(t.clientX,t.clientY)},{passive:true});
+document.addEventListener('touchcancel',()=>{if(sw)swEnd(sw.lx,sw.ly)},{passive:true});
 function sums(){const m=month(),L=S.tx.filter(t=>t.date.startsWith(m));const f=t=>L.filter(x=>x.type===t).reduce((a,b)=>a+b.amount,0);return{i:f('in'),o:f('out')}}
 function donut(type){
  const L=S.tx.filter(t=>t.type===type&&t.date.startsWith(month())),by={};
