@@ -14,7 +14,7 @@ html{scroll-padding-top:env(safe-area-inset-top,0px);background:linear-gradient(
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 12% 8%,rgba(125,211,252,.5),transparent 38%),radial-gradient(circle at 90% 38%,rgba(99,102,241,.45),transparent 42%),radial-gradient(circle at 25% 92%,rgba(56,189,248,.4),transparent 40%)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:none;color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;min-height:100vh}
-main{max-width:480px;margin:0 auto;padding:18px 16px 150px}
+main{max-width:480px;margin:0 auto;padding:18px 16px 150px;overflow-x:clip}
 h1{font-size:26px;font-weight:800;margin:0;letter-spacing:-.03em}h2{font-size:18px;font-weight:800;margin:0 0 12px}
 .sub{color:var(--mute);font-size:14px;font-weight:700;text-transform:capitalize}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
@@ -68,6 +68,8 @@ input:focus-visible,button:focus-visible{outline:3px solid #bae6fd;outline-offse
 .amtin{font-size:26px;font-weight:800}.err{color:#fecdd3;font-size:13px;min-height:20px;margin:8px 4px 0}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(172px + env(safe-area-inset-bottom,0px));background:rgba(8,28,100,.85);border:var(--edge);color:#fff;padding:11px 18px;border-radius:20px;font-size:14px;z-index:30;display:none;white-space:nowrap}
 .toast button{border:0;background:none;color:#7dd3fc;font:inherit;font-weight:800;margin-left:10px;cursor:pointer}
+@keyframes slFromR{from{transform:translateX(42px);opacity:0}to{transform:none;opacity:1}}@keyframes slFromL{from{transform:translateX(-42px);opacity:0}to{transform:none;opacity:1}}
+.view.sl-r{animation:slFromR .22s ease-out}.view.sl-l{animation:slFromL .22s ease-out}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body>
 <main>
@@ -173,7 +175,15 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
 function toast(m,u){const e=$('#toast');e.innerHTML=esc(m)+(u?'<button onclick="doUndo()">Urungkan</button>':'');e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',3200)}
 function doUndo(){if(undo){S=JSON.parse(undo);undo=null;save();render();toast('Dikembalikan ✓')}}
 function del(k,id){undo=JSON.stringify(S);S[k]=S[k].filter(x=>x.id!==id);save();render();toast('Dihapus',1)}
-function go(t){tab=t;render();scrollTo(0,0)}
+const ORDER=['home','tx','ins','card'];
+function go(t){const d=ORDER.indexOf(t)-ORDER.indexOf(tab);tab=t;render();scrollTo(0,0);if(!d)return;const v=$('#v-'+t);v.classList.remove('sl-l','sl-r');void v.offsetWidth;v.classList.add(d>0?'sl-r':'sl-l');v.addEventListener('animationend',()=>v.classList.remove('sl-l','sl-r'),{once:true})}
+let sw=null;
+document.addEventListener('touchstart',e=>{sw=null;if(e.touches.length!==1)return;if($('#ov').classList.contains('on'))return;const t=e.touches[0],el=e.target;if(el.closest&&el.closest('input,select,textarea,label,button.fab'))return;if(t.clientX<24||t.clientX>innerWidth-24)return;sw={x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
+document.addEventListener('touchend',e=>{if(!sw)return;const t=e.changedTouches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y,dt=Date.now()-sw.t;sw=null;
+ if(dt>800||Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.5)return;
+ if(String(getSelection()).length||$('#ov').classList.contains('on'))return;
+ const i=ORDER.indexOf(tab)+(dx<0?1:-1);if(i<0||i>=ORDER.length)return;go(ORDER[i])},{passive:true});
+document.addEventListener('touchcancel',()=>{sw=null},{passive:true});
 function sums(){const m=month(),L=S.tx.filter(t=>t.date.startsWith(m));const f=t=>L.filter(x=>x.type===t).reduce((a,b)=>a+b.amount,0);return{i:f('in'),o:f('out')}}
 function donut(type){
  const L=S.tx.filter(t=>t.type===type&&t.date.startsWith(month())),by={};
