@@ -174,6 +174,12 @@ button:focus-visible,input:focus-visible,label.btn:focus-within{outline:3px soli
 .dots{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:8px}
 .dt{width:8px;height:8px;border-radius:4px;border:0;background:var(--track);padding:0;transition:width .2s}
 .dt.on{width:22px;background:var(--ink)}
+.inbx{display:flex;align-items:center;gap:12px;width:100%;border:1.5px solid var(--accent);background:var(--surface);color:var(--ink);border-radius:22px;padding:12px 16px 12px 12px;margin-bottom:14px;text-align:left}
+.inbx .ico{color:var(--accent)}.inbx b{flex:1;font-size:14px}.inbx span:last-child{font-size:13px;font-weight:800;color:var(--accent)}
+.ib{padding:14px 0}.ib+.ib{border-top:1px solid var(--line)}
+.ibh{display:flex;align-items:center;gap:12px}.ibh .t{flex:1;min-width:0}.ibh .t b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ibh .t small{display:block;color:var(--mute);font-size:12px;margin-top:2px}
+.iba{display:flex;align-items:center;gap:8px;margin-top:10px}.iba .sp{flex:1}
+.flag{color:var(--bad);font-weight:700}
 .view{display:none}.view.on{display:block}
 @keyframes slFromR{from{transform:translateX(42px);opacity:0}to{transform:none;opacity:1}}@keyframes slFromL{from{transform:translateX(-42px);opacity:0}to{transform:none;opacity:1}}
 .view.sl-r{animation:slFromR .22s ease-out}.view.sl-l{animation:slFromL .22s ease-out}
@@ -232,6 +238,7 @@ search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',trash:'<path
 chevL:'<path d="M15 6l-6 6 6 6"/>',chevU:'<path d="M6 15l6-6 6 6"/>',chevD:'<path d="M6 9l6 6 6-6"/>',chevR:'<path d="M9 6l6 6-6 6"/>',check:'<path d="M5 12l5 5L20 7"/>',
 coin:'<circle cx="12" cy="12" r="9"/><path d="M14.8 9.2c-.5-.8-1.5-1.2-2.8-1.2-1.6 0-2.8.8-2.8 2s1.2 1.6 2.8 2 2.8.8 2.8 2-1.2 2-2.8 2c-1.3 0-2.3-.4-2.8-1.2M12 6.5v11"/>',
 wallet:'<path d="M20 12V8a2 2 0 0 0-2-2H5a2 2 0 0 1 0-4h12"/><path d="M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',
+mail:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 7l9 6 9-6"/>',
 image:'<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>'};
 const ic=(n,s=20)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
 const PAL=['#6b9bff','#ef8fa6','#6cc79c','#ebc35a','#a98ff0','#5fbfd4','#f0a46d','#94a3b8'];
@@ -254,7 +261,8 @@ function seed(){const d=Math.min(new Date().getDate(),28),m=month();const T=(t,c
  ins:[{id:uid(),name:'Laptop kerja',amt:900000,ten:10,paid:8},{id:uid(),name:'Motor',amt:1250000,ten:36,paid:14},{id:uid(),name:'HP baru',amt:458000,ten:12,paid:2}],
  cards:[{id:uid(),name:'Kartu contoh A',amt:1850000,due:off(5),paid:false,l4:'1234',col:'navy'},{id:uid(),name:'Kartu contoh B',amt:720000,due:off(12),paid:false,col:'sage'}]}}
 function load(){try{const r=localStorage.getItem('dompetku-v1');if(r)return JSON.parse(r)}catch(e){}return seed()}
-let cfg={},pt,photos={},hide=false;
+let cfg={},pt,photos={},hide=false,inbox=[],inboxOpen=false;
+try{inbox=JSON.parse(localStorage.getItem('cashflow-inbox'))||[]}catch(e){}
 try{cfg=JSON.parse(localStorage.getItem('cashflow-gs'))||{}}catch(e){}
 try{photos=JSON.parse(localStorage.getItem('cashflow-photos'))||{}}catch(e){}
 try{hide=localStorage.getItem('cashflow-hide')==='1'}catch(e){}
@@ -267,8 +275,9 @@ async function pull(){
  if(!cfg.url){sy('Belum tersambung ke Google Sheet');return}
  try{sy('Menyinkronkan…');const r=await fetch(cfg.url+'?key='+encodeURIComponent(cfg.key||''));const j=await r.json();
  if(j.error){sy('Kode rahasia salah');return}
+ setInbox(j.inbox);
  if(j.empty||(S.rev||0)>j.rev){if(S.seed&&!S.rev){sy('Tersambung ke Google Sheet')}else{if(!S.rev){S.rev=Date.now();store()}push()}}
- else if(j.rev>(S.rev||0)){S={seed:j.seed,tx:j.tx,ins:j.ins,cards:j.cards,bud:j.bud||{},cc:j.cc||{in:[],out:[]},rev:j.rev};store();render();sy('Tersinkron ke Google Sheet')}
+ else if(j.rev>(S.rev||0)){S={seed:j.seed,tx:j.tx,ins:j.ins,cards:j.cards,bud:j.bud||{},cc:j.cc||{in:[],out:[]},dis:j.dis||[],rules:j.rules||{},rev:j.rev};store();render();sy('Tersinkron ke Google Sheet')}
  else sy('Tersinkron ke Google Sheet')}catch(e){sy('Offline: data tersimpan di perangkat ini')}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
 /* tema */
@@ -312,7 +321,7 @@ function ccInner(c,show=!hide,tapHint=false){const d=dleft(c.due),tag=c.paid?['L
 /* tampilan Beranda */
 const qa=(i,l,a)=>`<button onclick="${a}"><i>${ic(i,21)}</i>${l}</button>`;
 function vHome(){const s=sums(),bal=balance();
- return`<section class="bal">
+ return`${inboxBanner()}<section class="bal">
   <div class="bal-top"><small>Sisa uang</small>${mnavInline()}${eyeBtn()}</div>
   <div class="big num">${hide?'Rp ••••••':(bal<0?'−':'')+rp(Math.abs(bal))}</div>
   <div class="flow"><div><span class="dot g">${ic('inArr',16)}</span><span>Pemasukan<b class="num">${money(s.i)}</b></span></div><div><span class="dot r">${ic('outArr',16)}</span><span>Pengeluaran<b class="num">${money(s.o)}</b></span></div></div>
@@ -344,7 +353,7 @@ function vBud(){const b=S.bud||{},names=Object.keys(b).filter(n=>b[n]>0);if(!nam
  const rows=names.map(n=>{const sp=by[n]||0,pc=Math.round(sp/b[n]*100),over=sp>b[n];return`<div class="bud"><div class="meta" style="color:var(--ink)"><span>${esc(n)}</span><span class="num">${rp(sp)} / ${rp(b[n])}</span></div>${tickP(pc,24,over?'over':'')}<div class="meta"><span class="${over?'neg':''}">${over?'Lewat '+rp(sp-b[n]):'Sisa '+rp(b[n]-sp)}</span><span>${pc}%</span></div></div>`}).join('');
  return`<div class="sh"><h2>Anggaran</h2><button class="lnk" onclick="openBud()">Atur</button></div><section class="panel">${rows}</section>`}
 /* tampilan Catatan */
-function vTx(){return`<div class="ph"><h1>Catatan</h1><button class="rb pri" onclick="openSheet('out')" aria-label="Catat baru">${ic('plus',20)}</button></div>
+function vTx(){return`<div class="ph"><h1>Catatan</h1><button class="rb pri" onclick="openSheet('out')" aria-label="Catat baru">${ic('plus',20)}</button></div>${inboxBanner()}
  <div class="seg">${[['list','Daftar'],['rekap','Rekap']].map(([k,l])=>`<button class="${txMode===k?'on':''}" onclick="txMode='${k}';render()">${l}</button>`).join('')}</div>${txMode==='rekap'?vRekap():vList()}`}
 function txRow(t){const c=cat(t.type,t.cat),cc=!!t.card;return`<button class="item rowbtn" onclick="openEdit('${t.id}')"><span class="ico">${cc?ic('card'):c[1]}</span><span class="t"><b>${esc(t.note||t.cat)}</b><small>${esc(t.cat)} · ${fdate(t.date)}${cc?' · via '+esc(ccName(t)):''}</small></span><span class="amt ${cc?'':t.type}">${t.type==='in'?'+':'−'}${rp(t.amount)}</span></button>`}
 function txListHTML(){const ql=q.trim().toLowerCase();let L=S.tx.slice().reverse();
@@ -413,6 +422,28 @@ function payCard(id){const c=S.cards.find(x=>x.id===id);if(c)payAmt(c,cSisa(c))}
 function openPay(id){const c=S.cards.find(x=>x.id===id);if(!c)return;$('#sheet').innerHTML=`<h2>Bayar ${esc(c.name)}</h2><p class="hint">Sisa tagihan ${rp(cSisa(c))}</p><label class="fl" for="f_pay">Nominal pembayaran</label><input id="f_pay" class="amtin" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="err" id="err" role="alert"></div><div class="two" style="margin-top:6px"><button class="btn ghost" onclick="closeSheet()">Batal</button><button class="btn" onclick="doPay('${id}')">Bayar</button></div>`;$('#ov').classList.add('on')}
 function doPay(id){const c=S.cards.find(x=>x.id===id),v=+$('#f_pay').value.replace(/\./g,'')||0,e=$('#err');if(!c)return;if(!v)return e.textContent='Isi nominal pembayarannya dulu ya.';if(v>cSisa(c))return e.textContent='Nominal melebihi sisa tagihan.';closeSheet();payAmt(c,v)}
 /* lembar lain */
+/* kotak masuk dari email bank */
+const MKW=[[/INDOMARET|ALFAMART|ALFAMIDI|\bIDM\b|SEMBAKO|SUPERMARKET|HYPERMART|TRANSMART|SUPERINDO|LOTTE|MINIMARKET|GROSIR/,'Belanja'],[/SPBU|PERTAMINA|SHELL|VIVO|PARKIR|GRAB|GOJEK|MAXIM|\bTOL\b/,'Transport'],[/APOTEK|APOTIK|FARMA|K24|GUARDIAN|WATSONS|KLINIK|RUMAH SAKIT|\bRS\b|DOKTER|LAB/,'Kesehatan'],[/AZKO|\bACE\b|INFORMA|IKEA|DEPO|BANGUNAN|\bPLN\b|PDAM/,'Rumah'],[/KFC|MCD|MCDONALD|STARBUCKS|\bJCO\b|KOPI|COFFEE|CAFE|KAFE|RESTO|BAKSO|\bMIE\b|WARUNG|\bRM\b|SATE|PIZZA|BURGER|BAKERY|ROTI|BOBA|CHATIME|MIXUE|NASI|DIMSUM|SUSHI|SOTO|GEPREK|FOOD/,'Makan'],[/CINEMA|\bXXI\b|\bCGV\b|NETFLIX|SPOTIFY|STEAM|KARAOKE/,'Hiburan']];
+const normKey=s=>String(s||'').toUpperCase().replace(/[^A-Z]+/g,' ').trim();
+const titleCase=s=>String(s||'').toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
+const guessCat=m=>{const k=normKey(m.merchant);return(S.rules||{})[k]||(MKW.find(([r])=>r.test(k))||[])[1]||'Lainnya'};
+const matchCard=m=>m.src!=='kartu'?null:(S.cards.find(c=>m.l4&&c.l4===m.l4)||S.cards.find(c=>c.name.toLowerCase().includes(String(m.bank).toLowerCase()))||null);
+const inb=()=>inbox.filter(m=>!S.tx.some(t=>t.mid===m.id)&&!(S.dis||[]).includes(m.id));
+function setInbox(L){const nw=JSON.stringify(L||[]);if(nw===JSON.stringify(inbox))return;inbox=L||[];try{localStorage.setItem('cashflow-inbox',nw)}catch(e){}render();refreshInbox()}
+function refreshInbox(){if(inboxOpen){inb().length?openInbox():closeSheet()}}
+function inboxBanner(){const n=inb().length;return n?`<button class="inbx" onclick="openInbox()"><span class="ico">${ic('mail')}</span><b>${n} transaksi baru dari email</b><span>Tinjau</span></button>`:''}
+function ibRow(m){const c=matchCard(m),g=guessCat(m),miss=m.src==='kartu'&&!c;
+ return`<div class="ib"><button class="rowbtn ibh" onclick="ibEdit('${m.id}')"><span class="ico">${ic(m.src==='kartu'?'card':'mail')}</span><span class="t"><b>${esc(titleCase(m.merchant))}</b><small>${esc(m.bank)} · ${fdate(m.date)} · ${c?'via '+esc(c.name):miss?'<span class="flag">Pilih kartunya</span>':'Saldo'}${m.cek?' · <span class="flag">Perlu dicek</span>':''}</small></span><b class="amt">${rp(m.amount)}</b></button>
+ <div class="iba"><button class="chip" onclick="ibEdit('${m.id}')">${cat('out',g)[1]} ${esc(g)}</button><span class="sp"></span><button class="btn ghost sm" onclick="ibDis('${m.id}')">Buang</button><button class="btn sm" onclick="ibSave('${m.id}')">${miss?'Ubah':'Simpan'}</button></div></div>`}
+function openInbox(){const L=inb().sort((a,b)=>b.date.localeCompare(a.date));
+ $('#sheet').innerHTML=`<h2>Kotak masuk</h2><p class="hint">Transaksi yang terbaca dari email bank. Periksa kategorinya, lalu simpan. Ketuk transaksi untuk mengubahnya dulu.</p>${L.length?L.map(ibRow).join(''):'<div class="empty">Tidak ada transaksi baru dari email.</div>'}<div class="two" style="margin-top:12px"><button class="btn ghost" onclick="closeSheet()">Tutup</button>${L.length>1?`<button class="btn" onclick="ibAll()">Simpan semua (${L.length})</button>`:''}</div>`;
+ $('#ov').classList.add('on');inboxOpen=true}
+function ibAdd(m){const c=matchCard(m),x={id:uid(),type:'out',amount:m.amount,cat:guessCat(m),note:titleCase(m.merchant),date:m.date,mid:m.id};if(c){x.card=c.id;x.cn=c.name}S.tx.push(x);txEffect(x,1)}
+function ibSave(id){const m=inbox.find(x=>x.id===id);if(!m)return;if(m.src==='kartu'&&!matchCard(m))return ibEdit(id);undo=JSON.stringify(S);ibAdd(m);save();render();refreshInbox();toast('Tersimpan',1)}
+function ibAll(){const L=inb();let n=0,skip=0;undo=JSON.stringify(S);L.forEach(m=>{if(m.src==='kartu'&&!matchCard(m)){skip++;return}ibAdd(m);n++});save();render();refreshInbox();toast(n+' transaksi tersimpan'+(skip?', '+skip+' perlu dipilih kartunya':''),1)}
+function ibDis(id){undo=JSON.stringify(S);S.dis=(S.dis||[]).concat(id).slice(-500);save();render();refreshInbox();toast('Dibuang',1)}
+function ibEdit(id){const m=inbox.find(x=>x.id===id);if(!m)return;const c=matchCard(m);form={type:'out',cat:guessCat(m),via:c?c.id:'',mid:m.id,mkey:normKey(m.merchant)};drawSheet();
+ $('#f_amt').value=nf(m.amount);$('#f_note').value=titleCase(m.merchant);$('#f_date').value=m.date;pick(form.cat);if(!document.querySelector('#cats .chip.on'))$('#f_newcat').value=form.cat;$('#ov').classList.add('on')}
 function openRem(){const L=remList();$('#sheet').innerHTML=`<h2>Pengingat</h2><p class="hint">Tagihan dan cicilan yang jatuh tempo dalam 7 hari atau sudah lewat.</p>
  ${L.length?`<div style="margin-top:8px">${L.map(([d,n,a,i])=>`<div class="item"><span class="ico">${ic(i)}</span><span class="t"><b>${esc(n)}</b><small class="${d<0?'neg':''}">${dueTxt(d)}</small></span><span class="amt">${money(a)}</span></div>`).join('')}</div>`:'<div class="empty">Tidak ada tagihan yang jatuh tempo dalam 7 hari.</div>'}
  <button class="btn ghost" style="margin-top:12px" onclick="closeSheet()">Tutup</button>`;$('#ov').classList.add('on')}
@@ -427,7 +458,7 @@ function exportCsv(){const qv=v=>'"'+String(v).replace(/"/g,'""')+'"';
 function toast(m,u){const e=$('#toast');e.innerHTML=esc(m)+(u?'<button onclick="doUndo()">Urungkan</button>':'');e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',3200)}
 function doUndo(){if(undo){S=JSON.parse(undo);undo=null;save();render();toast('Dikembalikan')}}
 function del(k,id){undo=JSON.stringify(S);if(k==='tx'){const t=S.tx.find(x=>x.id===id);if(t)txEffect(t,-1)}S[k]=S[k].filter(x=>x.id!==id);if(k==='cards'&&cardSel===id)cardSel=null;save();render();toast('Dihapus',1)}
-function clearAll(){undo=JSON.stringify(S);S={seed:false,tx:[],ins:[],cards:[]};save();render();toast('Data contoh dihapus',1)}
+function clearAll(){undo=JSON.stringify(S);S={seed:false,tx:[],ins:[],cards:[],dis:S.dis||[],rules:S.rules||{}};save();render();toast('Data contoh dihapus',1)}
 /* navigasi dan gesekan */
 const ORDER=['home','tx','ins','card'],NAV=[['home','home','Beranda'],['tx','list','Catatan'],['ins','target','Cicilan'],['card','card','Kartu']];
 function go(t){const d=ORDER.indexOf(t)-ORDER.indexOf(tab);tab=t;render();scrollTo(0,0);if(!d)return;const v=$('#v-'+t);v.classList.remove('sl-l','sl-r');void v.offsetWidth;v.classList.add(d>0?'sl-r':'sl-l');v.addEventListener('animationend',()=>v.classList.remove('sl-l','sl-r'),{once:true})}
@@ -449,7 +480,7 @@ function render(){
 /* form */
 const TYPES=[['out','outArr','Pengeluaran'],['in','inArr','Pemasukan'],['ins','target','Cicilan'],['card','card','Kartu kredit']];
 function openSheet(t){form={type:t||(tab==='ins'?'ins':tab==='card'?'card':'out'),cat:'',col:''};drawSheet();$('#ov').classList.add('on')}
-function closeSheet(){$('#ov').classList.remove('on')}
+function closeSheet(){inboxOpen=false;$('#ov').classList.remove('on')}
 function setType(t){form={type:t,cat:'',col:''};drawSheet()}
 function pick(c){form.cat=c;document.querySelectorAll('#cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.c===c))}
 function pickCol(k){form.col=form.col===k?'':k;syncSw()}
@@ -461,14 +492,14 @@ function onPhoto(inp){const f=inp.files&&inp.files[0];if(!f)return;const r=new F
  r.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,720/im.width),cv=document.createElement('canvas');cv.width=Math.round(im.width*sc);cv.height=Math.round(im.height*sc);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);form.photo=cv.toDataURL('image/jpeg',.72);form.photoDel=false;drawPrev()};im.onerror=()=>{$('#err').textContent='Gambar tidak bisa dibuka. Coba pilih foto lain.'};im.src=r.result};r.readAsDataURL(f)}
 function drawPrev(){const e=$('#phprev');if(!e)return;const ph=form.photo||(!form.photoDel&&form.edit&&photos[form.edit]);
  e.innerHTML=(ph?`<div class="phv" style="background-image:url(${ph})"></div>`:'')+`<div class="phrow"><label class="btn ghost sm" for="f_photo">${ic('image',16)} ${ph?'Ganti foto':'Pilih foto'}</label>${ph?`<button type="button" class="btn ghost sm" onclick="form.photo=null;form.photoDel=true;drawPrev()">Hapus foto</button>`:''}</div>`}
-function drawSheet(){const t=form.type;let f='';
+function drawSheet(){inboxOpen=false;const t=form.type;let f='';
  if(t==='in'||t==='out'){f=`<label class="fl" for="f_amt">Nominal</label><input id="f_amt" class="amtin" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="fl">Kategori</div><div class="chips" id="cats">${catList(t).map(c=>`<button type="button" class="chip" data-c="${esc(c[0])}" onclick="pick(this.dataset.c)">${c[1]} ${esc(c[0])}</button>`).join('')}</div><label class="fl" for="f_newcat">Atau buat kategori baru</label><input id="f_newcat" placeholder="Contoh: Hewan peliharaan" maxlength="20">${t==='out'&&!form.payTx&&S.cards.length?viaHTML():''}<label class="fl" for="f_note">Catatan (boleh kosong)</label><input id="f_note" placeholder="Contoh: makan siang" maxlength="40"><label class="fl" for="f_date">Tanggal</label><input id="f_date" type="date" value="${today()}">`}
  else if(t==='ins'){f=`<label class="fl" for="f_name">Nama cicilan</label><input id="f_name" placeholder="Contoh: Motor, HP, Laptop" maxlength="30"><label class="fl" for="f_amt">Cicilan per bulan</label><input id="f_amt" class="amtin" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="two"><div><label class="fl" for="f_ten">Lama cicilan (bulan)</label><input id="f_ten" inputmode="numeric" placeholder="12"></div><div><label class="fl" for="f_paid">Sudah dibayar (bulan)</label><input id="f_paid" inputmode="numeric" placeholder="0"></div></div><label class="fl" for="f_day">Tanggal jatuh tempo, berulang tiap bulan (opsional)</label><input id="f_day" type="date">`}
  else{f=`<label class="fl" for="f_name">Nama kartu</label><input id="f_name" placeholder="Contoh: BCA" maxlength="30"><label class="fl" for="f_amt">Jumlah tagihan</label><input id="f_amt" class="amtin" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="two"><div><label class="fl" for="f_pd">Sudah dibayar (Rp)</label><input id="f_pd" inputmode="numeric" placeholder="0" oninput="fmt(this)"></div><div><label class="fl" for="f_l4">4 digit terakhir</label><input id="f_l4" inputmode="numeric" maxlength="4" placeholder="1234" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4)"></div></div><label class="fl" for="f_date">Tanggal jatuh tempo</label><input id="f_date" type="date" value="${off(7)}">
  <div class="fl">Warna kartu</div><div id="ccprev"></div><div class="sw">${CKEYS.map(k=>`<button type="button" class="swb ${form.col===k?'on':''}" data-k="${k}" style="background:linear-gradient(135deg,${CCOL[k][0]},${CCOL[k][1]})" aria-label="Warna ${CNAME[k]}" onclick="pickCol('${k}')"></button>`).join('')}<label class="swb swc ${isHex(form.col)?'on':''}" id="swc" title="Pilih warna sendiri" style="${isHex(form.col)?'background:'+form.col:''}"><input type="color" id="f_colc" value="${isHex(form.col)?form.col:'#4f7fe0'}" oninput="pickCustom(this.value)" aria-label="Pilih warna sendiri"></label></div><p class="hint">Ketuk lingkaran pelangi di ujung untuk memilih warna sendiri. Kalau tidak ada yang dipilih, warna dipilih otomatis.</p>
  <div class="fl">Foto kartu (opsional, hanya tersimpan di perangkat ini)</div><div id="phprev"></div><input type="file" id="f_photo" accept="image/*" hidden onchange="onPhoto(this)">`}
- const title=form.edit?(t==='ins'?'Edit cicilan':t==='card'?'Edit kartu kredit':'Edit catatan'):'Catat baru',dn=t==='ins'?'cicilan':t==='card'?'kartu':'catatan';
- $('#sheet').innerHTML=`<h2>${title}</h2>${form.edit?'':`<div class="chips" style="margin-top:12px">${TYPES.map(x=>`<button type="button" class="chip ${t===x[0]?'on':''}" onclick="setType('${x[0]}')">${ic(x[1],15)} ${x[2]}</button>`).join('')}</div>`}${f}<div class="err" id="err" role="alert"></div><div class="two" style="margin-top:6px"><button class="btn ghost" onclick="closeSheet()">Batal</button><button class="btn" onclick="submit()">Simpan</button></div>${form.edit?`<button class="btn danger" style="margin-top:8px" onclick="delEdit()">${ic('trash',16)} Hapus ${dn}</button>`:''}`;
+ const title=form.mid?'Catat dari email':form.edit?(t==='ins'?'Edit cicilan':t==='card'?'Edit kartu kredit':'Edit catatan'):'Catat baru',dn=t==='ins'?'cicilan':t==='card'?'kartu':'catatan';
+ $('#sheet').innerHTML=`<h2>${title}</h2>${form.edit||form.mid?'':`<div class="chips" style="margin-top:12px">${TYPES.map(x=>`<button type="button" class="chip ${t===x[0]?'on':''}" onclick="setType('${x[0]}')">${ic(x[1],15)} ${x[2]}</button>`).join('')}</div>`}${f}<div class="err" id="err" role="alert"></div><div class="two" style="margin-top:6px"><button class="btn ghost" onclick="closeSheet()">Batal</button><button class="btn" onclick="submit()">Simpan</button></div>${form.edit?`<button class="btn danger" style="margin-top:8px" onclick="delEdit()">${ic('trash',16)} Hapus ${dn}</button>`:''}`;
  if(t==='card'){drawPrev();drawCcPrev();$('#f_name').addEventListener('input',drawCcPrev)}}
 function viaHTML(){return`<div class="fl">Bayar dengan</div><div class="chips" id="vias"><button type="button" class="chip ${!form.via?'on':''}" data-v="" onclick="pickVia(this.dataset.v)">${ic('wallet',15)} Saldo</button>${S.cards.map(c=>`<button type="button" class="chip ${form.via===c.id?'on':''}" data-v="${c.id}" onclick="pickVia(this.dataset.v)">${ic('card',15)} ${esc(c.name)}</button>`).join('')}</div><p class="hint" id="viahint" style="margin:-6px 4px 0">${viaHint()}</p>`}
 function viaHint(){const c=S.cards.find(x=>x.id===form.via);return c?'Saldo tidak berkurang. Tagihan '+esc(c.name)+' bertambah sebesar nominal ini.':'Nominal ini mengurangi saldo.'}
@@ -481,6 +512,7 @@ function submit(){const t=form.type,g=id=>(($('#'+id)||{}).value||''),num=id=>+g
  if(t==='in'||t==='out'){const a=num('f_amt'),nc=g('f_newcat').trim(),c=nc||form.cat;if(!a)return err('Isi nominalnya dulu ya.');if(!c)return err('Pilih kategori atau buat yang baru ya.');
   if(nc){S.cc=S.cc||{in:[],out:[]};S.cc[t]=S.cc[t]||[];if(!S.cc[t].includes(nc)&&!CATS[t].some(x=>x[0]===nc))S.cc[t].push(nc)}
   const o={type:t,amount:a,cat:c,note:g('f_note').trim(),date:g('f_date')||today()};ym=o.date.slice(0,7);
+  if(form.mid){o.mid=form.mid;S.rules=S.rules||{};if(form.mkey)S.rules[form.mkey]=c}
   const vc=t==='out'?S.cards.find(x=>x.id===form.via):null;if(vc){o.card=vc.id;o.cn=vc.name}
   if(form.edit){const x=S.tx.find(y=>y.id===form.edit);if(x){txEffect(x,-1);if(!vc){delete x.card;delete x.cn}Object.assign(x,o);txEffect(x,1)}}else{const x={id:uid(),...o};S.tx.push(x);txEffect(x,1)}
   if(vc)msg='Tersimpan. Tagihan '+vc.name+' bertambah '+rp(a);if(tab!=='tx')tab='home'}
@@ -492,7 +524,7 @@ function submit(){const t=form.type,g=id=>(($('#'+id)||{}).value||''),num=id=>+g
   if(form.photo){photos[id]=form.photo;if(!savePhotos()){delete photos[id];msg='Tersimpan, tapi foto gagal disimpan karena penyimpanan perangkat penuh'}}
   else if(form.photoDel&&photos[id]){delete photos[id];savePhotos()}
   cardSel=id;tab='card'}
- save();closeSheet();render();toast(msg)}
+ const fromMail=!!form.mid;save();closeSheet();render();toast(msg);if(fromMail&&inb().length)openInbox()}
 applyTheme();$('#b-sync').innerHTML=ic('cloud',19);$('#b-bell').insertAdjacentHTML('afterbegin',ic('bell',19));
 S=load();render();pull();
 </script></body></html>
