@@ -232,12 +232,13 @@ search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',trash:'<path
 chevL:'<path d="M15 6l-6 6 6 6"/>',chevU:'<path d="M6 15l6-6 6 6"/>',chevD:'<path d="M6 9l6 6 6-6"/>',chevR:'<path d="M9 6l6 6-6 6"/>',check:'<path d="M5 12l5 5L20 7"/>',
 coin:'<circle cx="12" cy="12" r="9"/><path d="M14.8 9.2c-.5-.8-1.5-1.2-2.8-1.2-1.6 0-2.8.8-2.8 2s1.2 1.6 2.8 2 2.8.8 2.8 2-1.2 2-2.8 2c-1.3 0-2.3-.4-2.8-1.2M12 6.5v11"/>',
 wallet:'<path d="M20 12V8a2 2 0 0 0-2-2H5a2 2 0 0 1 0-4h12"/><path d="M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',
+scale:'<path d="M12 3v18M8 21h8M5 7h14"/><path d="M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/>',
 image:'<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>'};
 const ic=(n,s=20)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
 const PAL=['#6b9bff','#ef8fa6','#6cc79c','#ebc35a','#a98ff0','#5fbfd4','#f0a46d','#94a3b8'];
 const CATS={
- in:[['Gaji',ic('work'),PAL[0]],['Bonus',ic('gift'),PAL[3]],['Usaha',ic('bag'),PAL[2]],['Investasi',ic('trend'),PAL[4]],['Lainnya',ic('dots'),PAL[7]]],
- out:[['Makan',ic('food'),PAL[3]],['Transport',ic('bus'),PAL[0]],['Belanja',ic('cart'),PAL[1]],['Rumah',ic('home'),PAL[4]],['Hiburan',ic('play'),PAL[5]],['Kesehatan',ic('heart'),PAL[2]],['Lainnya',ic('dots'),PAL[7]],['Cicilan',ic('target'),PAL[6]],['Kartu kredit',ic('card'),'#4f7fe0']]};
+ in:[['Gaji',ic('work'),PAL[0]],['Bonus',ic('gift'),PAL[3]],['Usaha',ic('bag'),PAL[2]],['Investasi',ic('trend'),PAL[4]],['Lainnya',ic('dots'),PAL[7]],['Penyesuaian',ic('scale'),PAL[7]]],
+ out:[['Makan',ic('food'),PAL[3]],['Transport',ic('bus'),PAL[0]],['Belanja',ic('cart'),PAL[1]],['Rumah',ic('home'),PAL[4]],['Hiburan',ic('play'),PAL[5]],['Kesehatan',ic('heart'),PAL[2]],['Lainnya',ic('dots'),PAL[7]],['Cicilan',ic('target'),PAL[6]],['Kartu kredit',ic('card'),'#4f7fe0'],['Penyesuaian',ic('scale'),PAL[7]]]};
 const MANUAL={in:5,out:7};
 const cat=(t,n)=>CATS[t].find(c=>c[0]===n)||[n,ic('tag'),PAL[hsh(n)%PAL.length]];
 const CCOL={graphite:['#2c2e34','#111215'],slate:['#5d6b7d','#2a323d'],navy:['#2a4677','#131b30'],sky:['#6c93d6','#34558f'],violet:['#5b5fc7','#2c2e6b'],teal:['#3c8d93','#1d4a50'],sage:['#5f8f7d','#2b453c'],forest:['#3f6b45','#1c3320'],plum:['#7a5ba0','#382a52'],wine:['#8a3a4a','#40161f'],rose:['#c77a8d','#6f3a4a'],red:['#c9504f','#6e2222'],amber:['#d08a3c','#7a4a17'],sand:['#c4a067','#7f6235'],gold:['#b8963e','#5f4b19']};
@@ -285,7 +286,9 @@ const catList=t=>CATS[t].slice(0,MANUAL[t]).concat((S.cc&&S.cc[t]||[]).map(n=>ca
 const isPay=t=>!t.card&&(!!t.pay||t.cat==='Kartu kredit');
 const ccName=t=>(S.cards.find(c=>c.id===t.card)||{}).name||t.cn||'kartu';
 function txEffect(t,sg){const id=t.card||t.pay,c=id&&S.cards.find(x=>x.id===id);if(!c)return;if(t.card)c.amt=Math.max(0,c.amt+sg*t.amount);else c.paidAmt=Math.max(0,(c.paidAmt||0)+sg*t.amount);c.paid=(c.paidAmt||0)>=c.amt}
-function sums(){const m=month(),L=S.tx.filter(t=>t.date.startsWith(m)&&!t.card);const f=t=>L.filter(x=>x.type===t).reduce((a,b)=>a+b.amount,0);return{i:f('in'),o:f('out')}}
+const isAdj=t=>t.cat==='Penyesuaian';
+const balToday=()=>S.tx.filter(t=>!t.card&&t.date<=today()).reduce((x,t)=>x+(t.type==='in'?t.amount:-t.amount),0);
+function sums(){const m=month(),L=S.tx.filter(t=>t.date.startsWith(m)&&!t.card&&!isAdj(t));const f=t=>L.filter(x=>x.type===t).reduce((a,b)=>a+b.amount,0);return{i:f('in'),o:f('out')}}
 const balance=()=>S.tx.filter(t=>!t.card&&t.date.slice(0,7)<=month()).reduce((x,t)=>x+(t.type==='in'?t.amount:-t.amount),0);
 const cSisa=c=>c.paid?0:Math.max(0,c.amt-(c.paidAmt||0));
 const sortedCards=()=>[...S.cards].sort((a,b)=>(a.paid-b.paid)||a.due.localeCompare(b.due));
@@ -318,6 +321,7 @@ function vHome(){const s=sums(),bal=balance();
   <div class="big num">${hide?'Rp ••••••':(bal<0?'−':'')+rp(Math.abs(bal))}</div>
   <div class="flow"><div><span class="dot g">${ic('inArr',16)}</span><span>Pemasukan<b class="num">${money(s.i)}</b></span></div><div><span class="dot r">${ic('outArr',16)}</span><span>Pengeluaran<b class="num">${money(s.o)}</b></span></div></div>
   <button class="btn" onclick="openSheet('out')">${ic('plus',18)} Catat transaksi</button>
+  <button class="lnk" style="display:block;margin:12px auto 0" onclick="openAdj()">Sesuaikan dengan saldo bank</button>
  </section>
  <div class="qa">${qa('inArr','Pemasukan',"openSheet('in')")}${qa('outArr','Pengeluaran',"openSheet('out')")}${qa('chart','Rekap',"txMode='rekap';go('tx')")}${qa('pie','Anggaran','openBud()')}</div>
  ${homeCards()}${monthPanel()}${insBanner()}${vBud()}
@@ -325,7 +329,7 @@ function vHome(){const s=sums(),bal=balance();
 function homeCards(){const L=sortedCards();
  return`<div class="sh"><h2>Kartu kredit</h2>${L.length?`<button class="lnk" onclick="go('card')">Lihat semua</button>`:''}</div>
  <div class="deck">${L.map(c=>`<button class="cc" style="${ccBg(c)}" onclick="cardSel='${c.id}';go('card')" aria-label="Buka ${esc(c.name)}">${ccInner(c)}</button>`).join('')}<button class="cc add" onclick="openSheet('card')">${ic('plus',18)} Tambah kartu</button></div>`}
-function monthPanel(){const L=S.tx.filter(t=>t.type===dType&&t.date.startsWith(month())&&!(dType==='out'&&isPay(t))),by={};L.forEach(t=>by[t.cat]=(by[t.cat]||0)+t.amount);
+function monthPanel(){const L=S.tx.filter(t=>t.type===dType&&t.date.startsWith(month())&&!isAdj(t)&&!(dType==='out'&&isPay(t))),by={};L.forEach(t=>by[t.cat]=(by[t.cat]||0)+t.amount);
  const rows=Object.entries(by).sort((a,b)=>b[1]-a[1]),tot=rows.reduce((a,b)=>a+b[1],0),nm=dType==='out'?'pengeluaran':'pemasukan',ccT=L.filter(t=>t.card).reduce((a,b)=>a+b.amount,0);
  return`<div class="sh"><h2>Bulan ini</h2></div><section class="panel">
  <div class="seg">${[['out','Pengeluaran'],['in','Pemasukan']].map(([k,l])=>`<button class="${dType===k?'on':''}" onclick="dType='${k}';render()">${l}</button>`).join('')}</div>
@@ -341,13 +345,13 @@ function insBanner(){const L=S.ins.filter(x=>x.paid<x.ten).sort((a,b)=>(a.ten-a.
  <section class="panel"><div class="ihead"><div class="ico">${ic('target')}</div><div class="t"><b>${esc(x.name)}</b><small>${money(x.amt)} / bulan</small></div></div>
  <div class="irem"><b>${remTxt(r)}</b><span>${p}%</span></div>${ticks(x.paid,x.ten)}<div class="cheer">${cheer(p,false)} Lunas sekitar ${finish(x)}.</div></section>`}
 function vBud(){const b=S.bud||{},names=Object.keys(b).filter(n=>b[n]>0);if(!names.length)return'';const by={};
- S.tx.filter(t=>t.type==='out'&&t.date.startsWith(month())&&!isPay(t)).forEach(t=>by[t.cat]=(by[t.cat]||0)+t.amount);
+ S.tx.filter(t=>t.type==='out'&&t.date.startsWith(month())&&!isPay(t)&&!isAdj(t)).forEach(t=>by[t.cat]=(by[t.cat]||0)+t.amount);
  const rows=names.map(n=>{const sp=by[n]||0,pc=Math.round(sp/b[n]*100),over=sp>b[n];return`<div class="bud"><div class="meta" style="color:var(--ink)"><span>${esc(n)}</span><span class="num">${rp(sp)} / ${rp(b[n])}</span></div>${tickP(pc,24,over?'over':'')}<div class="meta"><span class="${over?'neg':''}">${over?'Lewat '+rp(sp-b[n]):'Sisa '+rp(b[n]-sp)}</span><span>${pc}%</span></div></div>`}).join('');
  return`<div class="sh"><h2>Anggaran</h2><button class="lnk" onclick="openBud()">Atur</button></div><section class="panel">${rows}</section>`}
 /* tampilan Catatan */
 function vTx(){return`<div class="ph"><h1>Catatan</h1><button class="rb pri" onclick="openSheet('out')" aria-label="Catat baru">${ic('plus',20)}</button></div>
  <div class="seg">${[['list','Daftar'],['rekap','Rekap']].map(([k,l])=>`<button class="${txMode===k?'on':''}" onclick="txMode='${k}';render()">${l}</button>`).join('')}</div>${txMode==='rekap'?vRekap():vList()}`}
-function txRow(t){const c=cat(t.type,t.cat),cc=!!t.card;return`<button class="item rowbtn" onclick="openEdit('${t.id}')"><span class="ico">${cc?ic('card'):c[1]}</span><span class="t"><b>${esc(t.note||t.cat)}</b><small>${esc(t.cat)} · ${fdate(t.date)}${cc?' · via '+esc(ccName(t)):''}</small></span><span class="amt ${cc?'':t.type}">${t.type==='in'?'+':'−'}${rp(t.amount)}</span></button>`}
+function txRow(t){const c=cat(t.type,t.cat),cc=!!t.card;return`<button class="item rowbtn" onclick="openEdit('${t.id}')"><span class="ico">${cc?ic('card'):c[1]}</span><span class="t"><b>${esc(t.note||t.cat)}</b><small>${esc(t.cat)} · ${fdate(t.date)}${cc?' · via '+esc(ccName(t)):''}</small></span><span class="amt ${cc||isAdj(t)?'':t.type}">${t.type==='in'?'+':'−'}${rp(t.amount)}</span></button>`}
 function txListHTML(){const ql=q.trim().toLowerCase();let L=S.tx.slice().reverse();
  L=ql?L.filter(t=>((t.note||'')+' '+t.cat).toLowerCase().includes(ql)):L.filter(t=>t.date.startsWith(month()));
  L=L.filter(t=>flt==='all'||(flt==='card'?!!t.card:t.type===flt)).sort((a,b)=>b.date.localeCompare(a.date));
@@ -360,7 +364,7 @@ function vList(){const ch=[['all','Semua'],['in','Pemasukan'],['out','Pengeluara
 function togRk(k){rkSel=rkSel===k?'':k;render()}
 function grp(t){const d=t.date;if(rk==='month')return d.slice(0,7);if(rk==='day')return d;const x=new Date(d+'T00:00');x.setDate(x.getDate()-(x.getDay()+6)%7);return ds(x)}
 function glabel(k){const f=d=>d.toLocaleDateString('id-ID',{day:'numeric',month:'short'});if(rk==='month')return new Date(k+'-01T00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'});if(rk==='day')return new Date(k+'T00:00').toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'});const a=new Date(k+'T00:00'),b=new Date(a);b.setDate(b.getDate()+6);return f(a)+' – '+f(b)}
-function vRekap(){const base=S.tx.filter(t=>!t.card),src=rk==='month'?base:base.filter(t=>t.date.startsWith(month())),g={};
+function vRekap(){const base=S.tx.filter(t=>!t.card&&!isAdj(t)),src=rk==='month'?base:base.filter(t=>t.date.startsWith(month())),g={};
  src.forEach(t=>{const k=grp(t);g[k]=g[k]||{i:0,o:0,l:[]};g[k][t.type==='in'?'i':'o']+=t.amount;g[k].l.push(t)});
  let keys=Object.keys(g).sort().reverse();if(rk==='month')keys=keys.slice(0,12);
  const mx=Math.max(1,...keys.map(k=>Math.max(g[k].i,g[k].o)));
@@ -414,6 +418,14 @@ function payCard(id){const c=S.cards.find(x=>x.id===id);if(c)payAmt(c,cSisa(c))}
 function openPay(id){const c=S.cards.find(x=>x.id===id);if(!c)return;$('#sheet').innerHTML=`<h2>Bayar ${esc(c.name)}</h2><p class="hint">Sisa tagihan ${rp(cSisa(c))}</p><label class="fl" for="f_pay">Nominal pembayaran</label><input id="f_pay" class="amtin" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="err" id="err" role="alert"></div><div class="two" style="margin-top:6px"><button class="btn ghost" onclick="closeSheet()">Batal</button><button class="btn" onclick="doPay('${id}')">Bayar</button></div>`;$('#ov').classList.add('on')}
 function doPay(id){const c=S.cards.find(x=>x.id===id),v=+$('#f_pay').value.replace(/\./g,'')||0,e=$('#err');if(!c)return;if(!v)return e.textContent='Isi nominal pembayarannya dulu ya.';if(v>cSisa(c))return e.textContent='Nominal melebihi sisa tagihan.';closeSheet();payAmt(c,v)}
 /* lembar lain */
+function openAdj(){const cur=balToday();$('#sheet').innerHTML=`<h2>Sesuaikan saldo</h2><p class="hint">Ketik saldo sebenarnya, yaitu total semua rekening yang Anda catat di aplikasi ini. Selisihnya dicatat hari ini sebagai "Penyesuaian", dan tidak masuk grafik, rekap, atau anggaran.</p>
+ <div class="sumrow"><div><div class="lbl">Saldo di aplikasi hari ini</div><div class="val sm num">${(cur<0?'−':'')+rp(Math.abs(cur))}</div></div></div>
+ <label class="fl" for="f_real">Saldo sebenarnya di bank</label><input id="f_real" class="amtin" inputmode="numeric" placeholder="0" oninput="fmt(this);adjPrev()">
+ <p class="hint" id="adjprev" style="margin:8px 4px 0"></p><div class="err" id="err" role="alert"></div>
+ <div class="two" style="margin-top:6px"><button class="btn ghost" onclick="closeSheet()">Batal</button><button class="btn" onclick="doAdj()">Simpan</button></div>`;$('#ov').classList.add('on')}
+function adjPrev(){const v=$('#f_real').value,e=$('#adjprev');if(!v){e.textContent='';return}const d=+v.replace(/\./g,'')-balToday();e.textContent=d===0?'Saldo sudah sama, tidak ada yang perlu dicatat.':(d>0?'Selisih +':'Selisih −')+rp(Math.abs(d))+' akan dicatat sebagai '+(d>0?'pemasukan':'pengeluaran')+' penyesuaian.'}
+function doAdj(){const v=$('#f_real').value;if(!v)return $('#err').textContent='Isi saldo sebenarnya dulu ya.';const d=+v.replace(/\./g,'')-balToday();if(!d){closeSheet();return toast('Saldo sudah sama')}
+ undo=JSON.stringify(S);S.tx.push({id:uid(),type:d>0?'in':'out',cat:'Penyesuaian',amount:Math.abs(d),note:'Penyesuaian saldo',date:today()});ym=today().slice(0,7);save();closeSheet();render();toast('Saldo disesuaikan '+(d>0?'+':'−')+rp(Math.abs(d)),1)}
 function openRem(){const L=remList();$('#sheet').innerHTML=`<h2>Pengingat</h2><p class="hint">Tagihan dan cicilan yang jatuh tempo dalam 7 hari atau sudah lewat.</p>
  ${L.length?`<div style="margin-top:8px">${L.map(([d,n,a,i])=>`<div class="item"><span class="ico">${ic(i)}</span><span class="t"><b>${esc(n)}</b><small class="${d<0?'neg':''}">${dueTxt(d)}</small></span><span class="amt">${money(a)}</span></div>`).join('')}</div>`:'<div class="empty">Tidak ada tagihan yang jatuh tempo dalam 7 hari.</div>'}
  <button class="btn ghost" style="margin-top:12px" onclick="closeSheet()">Tutup</button>`;$('#ov').classList.add('on')}
